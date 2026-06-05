@@ -1,0 +1,216 @@
+{
+  "info": {
+    "name": "AI-Genius Auth - MA216 Assignment 03",
+    "description": "Complete JWT Auth + RBAC workflow for AI-Genius SaaS Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "ACCESS_TOKEN",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Register Users",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ai-genius.com\",\n  \"password\": \"Admin@123\",\n  \"role\": \"Admin\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Premium User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"premium@ai-genius.com\",\n  \"password\": \"Premium@123\",\n  \"role\": \"Premium_User\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register Free User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"free@ai-genius.com\",\n  \"password\": \"Free@123\",\n  \"role\": \"Free_User\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "item": [
+        {
+          "name": "Login as Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('ACCESS_TOKEN', res.accessToken);",
+                  "  console.log('Access token saved!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@ai-genius.com\",\n  \"password\": \"Admin@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as Free User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('ACCESS_TOKEN', res.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{BASE_URL}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"free@ai-genius.com\",\n  \"password\": \"Free@123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Protected AI Endpoints",
+      "item": [
+        {
+          "name": "GET /free-model (All Roles)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/ai/free-model"
+          }
+        },
+        {
+          "name": "POST /premium-model (Premium + Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/api/ai/premium-model",
+            "body": { "mode": "raw", "raw": "{\"prompt\": \"Generate an image of a futuristic city\"}" }
+          }
+        },
+        {
+          "name": "DELETE /purge-cache (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/ai/purge-cache"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Token Refresh",
+      "item": [
+        {
+          "name": "Refresh Access Token (uses cookie)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('ACCESS_TOKEN', res.accessToken);",
+                  "  console.log('New access token saved!');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{BASE_URL}}/api/auth/refresh"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Access Denied Tests",
+      "item": [
+        {
+          "name": "Free User tries Premium Model (403 expected)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }
+            ],
+            "url": "{{BASE_URL}}/api/ai/premium-model"
+          }
+        },
+        {
+          "name": "No Token - Unauthorized (401 expected)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{BASE_URL}}/api/ai/free-model"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Logout",
+      "item": [
+        {
+          "name": "Logout (clears cookie + DB token)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{BASE_URL}}/api/auth/logout"
+          }
+        }
+      ]
+    }
+  ]
+}
